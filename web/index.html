@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Игра «Бункер»</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.png" type="image/png">
+
+    <style>
+        /* Полностью растягиваем страницу */
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: "Arial", sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+
+        /* Видео на фоне */
+        .background-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            min-width: 100%;
+            min-height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+
+        /* Контент поверх видео */
+        .content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            /* полупрозрачный фон */
+            padding: 40px 60px;
+            border-radius: 20px;
+        }
+
+        h1 {
+            font-size: 4em;
+            margin: 0 0 20px;
+        }
+
+        p {
+            font-size: 1.5em;
+        }
+
+        /* Кнопка начать игру */
+        .start-btn {
+            margin-top: 30px;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            color: white;
+            background-color: #ff4c4c;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .start-btn:hover {
+            background-color: #ff1a1a;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Видео на фоне -->
+    <video class="background-video" autoplay muted loop>
+        <source src="background.mp4" type="video/mp4">
+        Ваш браузер не поддерживает видео.
+    </video>
+
+    <!-- Контент -->
+    <div class="content">
+        <h1>Добро пожаловать в Бункер </h1>
+        <p>Приготовьтесь к выживанию и игре с друзьями!</p>
+        <button class="start-btn" onclick="window.location.href='lobby.html'">Начать игру</button>
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Комната — Бункер</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            color: white;
+            background-image: url("/room-bg.jpg");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            position: relative;
+            z-index: 0;
+            overflow: hidden;
+            /* Убираем скролл страницы */
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: -1;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 24px;
+            padding: 0 10px;
+        }
+
+        /* Основной контейнер для карточек */
+        .room {
+            display: grid;
+            gap: 5px;
+            justify-items: center;
+            align-items: start;
+
+            max-width: 1400px;
+            margin: 0 auto;
+
+
+            /* Авторазмер высоты */
+
+            overflow-y: auto;
+
+            /* Стили для скроллбара */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+
+            /* Минимальная ширина для ячеек */
+            grid-auto-columns: minmax(200px, 1fr);
+        }
+
+        .room::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .room::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .room::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        /* Авторазмер карточек */
+        .player-card {
+            width: 100%;
+            /* Важно: 100% ширины ячейки */
+            min-height: 180px;
+            padding: 12px;
+            border-radius: 16px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+            transition: transform 0.25s, border-color 0.3s;
+            border: 2px solid transparent;
+            backdrop-filter: blur(6px);
+            background: linear-gradient(145deg, rgba(30, 30, 30, 0.85), rgba(15, 15, 15, 0.9));
+
+            /* Автоподстройка шрифтов */
+            font-size: 14px;
+            box-sizing: border-box;
+
+            /* Ограничение максимальной ширины */
+            max-width: 280px;
+        }
+
+        /* Адаптивные размеры для разных количеств карточек */
+        /* 1-4 игрока - крупные карточки */
+        .room.size-1 .player-card,
+        .room.size-2 .player-card,
+        .room.size-3 .player-card,
+        .room.size-4 .player-card {
+            min-height: 220px;
+            padding: 16px;
+            font-size: 16px;
+            max-width: 300px;
+        }
+
+        /* 5-6 игроков - средние */
+        .room.size-5 .player-card,
+        .room.size-6 .player-card {
+            min-height: 200px;
+            padding: 14px;
+            font-size: 15px;
+            max-width: 260px;
+        }
+
+        /* 7-8 игроков - компактные */
+        .room.size-7 .player-card,
+        .room.size-8 .player-card {
+            min-height: 180px;
+            padding: 12px;
+            font-size: 14px;
+            max-width: 240px;
+        }
+
+        /* 9+ игроков - очень компактные */
+        .room.size-9 .player-card,
+        .room.size-10 .player-card,
+        .room.size-many .player-card {
+            min-height: 160px;
+            padding: 10px;
+            font-size: 13px;
+            max-width: 220px;
+        }
+
+        .player-card.current {
+            transform: scale(1.05);
+            z-index: 10;
+            border-color: yellow;
+        }
+
+        .player-card:hover {
+            transform: translateY(-4px);
+        }
+
+        /* Адаптивные аватарки */
+        .avatar {
+            width: clamp(60px, 10vw, 90px);
+            height: clamp(60px, 10vw, 90px);
+            border-radius: 50%;
+            margin: 0 auto 8px;
+            overflow: hidden;
+            background: #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(20px, 4vw, 32px);
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .name {
+            text-align: center;
+            font-size: clamp(16px, 2vw, 20px);
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .stats {
+            margin-top: 8px;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.08);
+            padding: clamp(6px, 1vw, 10px);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: clamp(11px, 1.5vw, 14px);
+        }
+
+        .stat-hidden {
+            color: transparent;
+            text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+            user-select: none;
+        }
+
+
+        .lock {
+            opacity: 0.6;
+        }
+
+        /* Таймер */
+        .timer-display {
+            font-size: 20px;
+            font-weight: bold;
+            display: none;
+            padding: 6px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .timer-button {
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 7px;
+            border: none;
+            background-color: yellow;
+            color: black;
+            transition: background-color 0.3s, transform 0.2s;
+            min-height: 36px;
+            font-weight: bold;
+        }
+
+        .timer-button:hover {
+            background-color: gold;
+            transform: scale(1.05);
+        }
+
+        .timer-ended {
+            color: red;
+        }
+
+        /* Панель управления - фиксированная внизу */
+        .control-panel {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 450px;
+            background: rgba(20, 20, 20, 0.92);
+            backdrop-filter: blur(12px);
+            border-radius: 14px;
+            padding: 12px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 900;
+            box-sizing: border-box;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .timer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+
+        .main-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+            min-height: 40px;
+        }
+
+        .action-btn.start {
+            background: linear-gradient(145deg, #3cff3c, #1fa31f);
+            color: black;
+        }
+
+        .action-btn.end {
+            background: linear-gradient(145deg, #ff4c4c, #a31212);
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+        }
+
+        .danger-zone {
+            display: flex;
+            justify-content: center;
+        }
+
+
+
+        .game-result {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            z-index: 1000;
+            padding: 40px;
+            overflow-y: auto;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        .game-result h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading::after {
+            content: " ";
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-left: 8px;
+            border: 3px solid white;
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .overlay.hidden {
+            display: none;
+        }
+
+        .result-card {
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            background: linear-gradient(145deg, #1c1c1c, #0f0f0f);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .result-text {
+            white-space: pre-line;
+            font-size: 17px;
+            line-height: 1.6;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 22px;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .close-btn:hover {
+            opacity: 1;
+        }
+
+        .danger {
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 7px;
+            border: none;
+            background: crimson;
+            color: white;
+            box-shadow: 0 0 12px rgba(220, 20, 60, 0.5);
+            transition: background-color 0.3s, transform 0.2s;
+            min-height: 36px;
+            font-weight: bold;
+        }
+
+        .danger:hover {
+            background: darkred;
+            transform: scale(1.05);
+        }
+
+        .player-card.voted {
+            border: 3px solid #f1c40f;
+            opacity: 0.85;
+        }
+
+        .player-card.voted::after {
+            content: "✓ ПРОГОЛОСОВАЛ";
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #f1c40f;
+            color: #000;
+            padding: 3px 6px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+
+        /* Баннер голосования */
+        #votingBanner {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #f1c40f;
+            color: #000;
+            font-weight: bold;
+            font-size: clamp(18px, 3vw, 24px);
+            padding: 8px 16px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            text-align: center;
+            max-width: 90%;
+            transition: opacity 0.5s ease;
+        }
+
+        #votingBanner:not(.hidden) {
+            opacity: 1;
+        }
+
+        /* Кнопка полноэкранного режима */
+        .fullscreen-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 44px;
+            height: 44px;
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(40, 40, 40, 0.9);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .fullscreen-btn:active {
+            transform: scale(0.95);
+        }
+
+        .fullscreen-btn.fullscreen {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: gold;
+            color: gold;
+        }
+
+        @media (max-width: 768px) {
+            .room {
+                height: calc(100vh - 180px);
+                /* Для мобильных еще меньше */
+            }
+
+            .control-panel {
+                bottom: 8px;
+                padding: 10px;
+                width: 95%;
+                max-width: 400px;
+                gap: 8px;
+            }
+
+            .timer-button,
+            .action-btn,
+            .danger {
+                font-size: 13px;
+                padding: 8px 12px;
+                min-height: 34px;
+            }
+
+            .timer-display {
+                font-size: 18px;
+                padding: 5px 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .control-panel {
+                max-width: 95%;
+                padding: 8px;
+            }
+
+            .main-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .action-btn {
+                min-height: 38px;
+            }
+
+            .timer-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .timer-button {
+                width: 100%;
+            }
+        }
+    </style>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.png" type="image/png">
+</head>
+
+<body>
+
+    <h1> Комната бункера</h1>
+    <div class="room" id="players"></div>
+
+    <div id="votingBanner" class="hidden" style="
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #f1c40f;
+    color: #000;
+    font-weight: bold;
+    font-size: 24px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.6);
+    z-index: 1000;
+    ">
+        🗳️ Голосование!
+    </div>
+
+    <div class="control-panel">
+        <div class="timer-row">
+            <div id="timer" class="timer-display">02:00</div>
+            <button id="start-timer" class="timer-button">⏱ Таймер</button>
+        </div>
+
+        <div class="main-actions">
+            <button id="startRoundBtn" class="action-btn start">▶ Начать круг</button>
+            <button id="endGameBtn" class="action-btn end">⛔ Конец игры</button>
+        </div>
+
+        <div class="danger-zone">
+            <button id="resetGameBtn" class="danger">🔄 Новая игра</button>
+        </div>
+    </div>
+    <button id="fullscreenBtn" class="fullscreen-btn" title="Полноэкранный режим">⛶</button>
+
+    <script>
+        async function loadPlayers() {
+            try {
+                const res = await fetch("http://127.0.0.1:8000/lobby/players");
+                const players = await res.json();
+                const container = document.getElementById("players");
+
+                // === ОБНОВЛЯЕМ СЕТКУ ===
+                updateGridForPlayerCount(players.length);
+
+                // === адаптация под количество игроков ===
+                container.className = "room";
+
+                const count = players.length;
+                if (count <= 10) {
+                    container.classList.add(`size-${count}`);
+                } else {
+                    container.classList.add("size-many");
+                }
+
+                const stateRes = await fetch("http://127.0.0.1:8000/game_state");
+                const game_state = await stateRes.json();
+
+                // --- Показ баннера голосования ---
+                const banner = document.getElementById("votingBanner");
+                if (game_state.phase === "voting") {
+                    banner.classList.remove("hidden");
+                } else {
+                    banner.classList.add("hidden");
+                }
+
+                const playersById = {};
+                players.forEach(p => playersById[p.id] = p);
+
+                // текущий игрок
+                let current_id = null;
+                if (game_state.phase === "action") {
+                    const n = game_state.players_order.length;
+                    for (let i = 0; i < n; i++) {
+                        const idx = (game_state.current_index + i) % n;
+                        const id = game_state.players_order[idx];
+                        const player = playersById[id];
+                        if (player && !player.eliminated) {
+                            current_id = id;
+                            break;
+                        }
+                    }
+                }
+
+                players.forEach(p => {
+                    let card = document.getElementById(`player-${p.id}`);
+                    if (!card) {
+                        card = document.createElement("div");
+                        card.id = `player-${p.id}`;
+                        card.className = "player-card";
+                        card.style.position = "relative";
+
+                        const avatar = document.createElement("div");
+                        avatar.className = "avatar";
+                        card.appendChild(avatar);
+
+                        const name = document.createElement("div");
+                        name.className = "name";
+                        card.appendChild(name);
+
+                        const stats = document.createElement("div");
+                        stats.className = "stats";
+                        card.appendChild(stats);
+
+                        container.appendChild(card);
+                    }
+
+                    // Аватар
+                    const avatarDiv = card.querySelector(".avatar");
+                    avatarDiv.innerHTML = p.avatar_url ? `<img src="${p.avatar_url}">` : p.name[0];
+
+                    // Имя
+                    card.querySelector(".name").textContent = p.name;
+
+                    // Характеристики
+                    const statsDiv = card.querySelector(".stats");
+                    const fields = ["profession", "age", "health", "hobby", "extra", "condition"];
+                    const icons = { "profession": "👤", "age": "🎂", "health": "❤️", "hobby": "🎯", "extra": "🎒", "condition": "⚠️" };
+
+                    fields.forEach(f => {
+                        let statDiv = statsDiv.querySelector(`.stat-${f}`);
+                        if (!statDiv) {
+                            statDiv = document.createElement("div");
+                            statDiv.className = `stat stat-${f}`;
+                            statsDiv.appendChild(statDiv);
+                        }
+                        statDiv.innerHTML = p.opened?.[f] ? `${icons[f]} ${capitalize(f)}: <b>${p.card?.[f]}</b>`
+                            : `${icons[f]} ${capitalize(f)}: <span class="stat-hidden lock">СКРЫТО</span>`;
+                    });
+
+                    // Текущий игрок
+                    if (p.id === current_id) card.classList.add("current");
+                    else card.classList.remove("current");
+
+                    // Голосовавший
+                    if (game_state.voted_players.includes(p.id)) card.classList.add("voted");
+                    else card.classList.remove("voted");
+
+                    // Изгнанный
+                    if (p.eliminated) {
+                        card.style.opacity = 0.4;
+                        card.style.textDecoration = "line-through";
+                    } else {
+                        card.style.opacity = 1;
+                        card.style.textDecoration = "none";
+                    }
+                });
+
+            } catch (error) {
+                console.error("Ошибка загрузки игроков:", error);
+            }
+        }
+
+        function capitalize(s) {
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        function updateGridForPlayerCount(count) {
+            const room = document.getElementById('players');
+            const screenWidth = window.innerWidth;
+
+            // Устанавливаем базовый класс
+            room.className = 'room';
+
+            // Добавляем класс для количества игроков
+            if (count <= 10) {
+                room.classList.add(`size-${count}`);
+            } else {
+                room.classList.add('size-many');
+            }
+
+            // Динамическая настройка grid в зависимости от количества игроков и ширины экрана
+            if (count <= 4) {
+                // Для 1-4 игроков
+                if (screenWidth < 576) {
+                    room.style.gridTemplateColumns = `repeat(${Math.min(count, 2)}, 1fr)`;
+                } else if (screenWidth < 768) {
+                    room.style.gridTemplateColumns = `repeat(${Math.min(count, 3)}, 1fr)`;
+                } else {
+                    room.style.gridTemplateColumns = `repeat(${Math.min(count, 4)}, 1fr)`;
+                }
+            } else if (count <= 6) {
+                // Для 5-6 игроков
+                if (screenWidth < 576) {
+                    room.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                } else if (screenWidth < 768) {
+                    room.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                } else {
+                    room.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                }
+            } else if (count <= 8) {
+                // Для 7-8 игроков
+                if (screenWidth < 576) {
+                    room.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                } else if (screenWidth < 768) {
+                    room.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                } else if (screenWidth < 1200) {
+                    room.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                } else {
+                    room.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                }
+            } else {
+                // Для 9+ игроков
+                if (screenWidth < 576) {
+                    room.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                } else if (screenWidth < 768) {
+                    room.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                } else if (screenWidth < 992) {
+                    room.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                } else {
+                    room.style.gridTemplateColumns = 'repeat(5, 1fr)';
+                }
+            }
+        }
+
+        // --- Таймер ---
+        const timerDisplay = document.getElementById("timer");
+        const startBtn = document.getElementById("start-timer");
+        let timerInterval = null;
+
+        startBtn.addEventListener("click", () => {
+            clearInterval(timerInterval);
+            let timeLeft = 120; // 2 минуты
+            timerDisplay.style.display = "block";
+            timerDisplay.classList.remove("timer-ended");
+            timerDisplay.textContent = formatTime(timeLeft);
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = formatTime(timeLeft);
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerDisplay.classList.add("timer-ended");
+                }
+            }, 1000);
+        });
+
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60).toString().padStart(2, '0');
+            const s = (sec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        // Обработчик изменения размера окна
+        window.addEventListener('resize', () => {
+            const room = document.getElementById('players');
+            const playerCount = room.children.length;
+            if (playerCount > 0) {
+                updateGridForPlayerCount(playerCount);
+            }
+        });
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', () => {
+            // Загружаем игроков сразу
+            loadPlayers();
+
+            // Обновляем каждые 2 секунды
+            setInterval(loadPlayers, 2000);
+        });
+    </script>
+
+
+    <script>
+        document.getElementById("startRoundBtn").onclick = async function () {
+            const response = await fetch("/game/start_round", { method: "POST" });
+            const data = await response.json();
+
+            if (data.status !== "ok") {
+                console.error("Ошибка запуска круга:", data.message);
+            }
+        };
+
+    </script>
+
+    <div id="gameOverlay" class="overlay hidden">
+        <div class="result-card">
+            <button class="close-btn" onclick="closeResult()">✕</button>
+            <div id="gameResult" class="result-text">
+                Генерация финала...
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        function closeResult() {
+            document.getElementById("gameOverlay").classList.add("hidden");
+        }
+
+        document.getElementById("endGameBtn").addEventListener("click", async () => {
+            const overlay = document.getElementById("gameOverlay");
+            const textBlock = document.getElementById("gameResult");
+
+            overlay.classList.remove("hidden");
+            textBlock.innerText = "⏳ Генерация финала игры...\nПожалуйста, подождите.";
+
+            try {
+                const res = await fetch("/game/end", { method: "POST" });
+                const data = await res.json();
+
+                if (data.status === "ok") {
+                    textBlock.innerText = data.summary;
+                } else {
+                    textBlock.innerText = data.message || "Ошибка генерации финала";
+                }
+            } catch (e) {
+                textBlock.innerText = "Ошибка запроса: " + e;
+            }
+        });
+    </script>
+
+
+    <script>
+        document.getElementById("resetGameBtn").addEventListener("click", async () => {
+            if (!confirm("⚠️ Начать новую игру? Все данные будут сброшены")) return;
+
+            const res = await fetch("/game/reset", { method: "POST" });
+            const data = await res.json();
+
+            if (data.status === "ok") {
+                location.reload(); // 🔄 полностью обновляем комнату
+            } else {
+                alert("Ошибка сброса игры");
+            }
+        });
+
+        // Добавьте этот код в ваш скрипт после других функций
+
+        // Полноэкранный режим
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                // Входим в полноэкранный режим
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen();
+                } else if (document.documentElement.mozRequestFullScreen) {
+                    document.documentElement.mozRequestFullScreen();
+                } else if (document.documentElement.msRequestFullscreen) {
+                    document.documentElement.msRequestFullscreen();
+                }
+                fullscreenBtn.classList.add('fullscreen');
+                fullscreenBtn.innerHTML = '⛶'; // Иконка выхода из полноэкранного режима
+                fullscreenBtn.title = "Выйти из полноэкранного режима";
+            } else {
+                // Выходим из полноэкранного режима
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                fullscreenBtn.classList.remove('fullscreen');
+                fullscreenBtn.innerHTML = '⛶'; // Иконка полноэкранного режима
+                fullscreenBtn.title = "Полноэкранный режим";
+            }
+        }
+
+        // Слушаем события изменения полноэкранного режима
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+        document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+        document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+
+        function updateFullscreenButton() {
+            if (document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement) {
+                fullscreenBtn.classList.add('fullscreen');
+                fullscreenBtn.innerHTML = '⛶';
+                fullscreenBtn.title = "Выйти из полноэкранного режима";
+            } else {
+                fullscreenBtn.classList.remove('fullscreen');
+                fullscreenBtn.innerHTML = '⛶';
+                fullscreenBtn.title = "Полноэкранный режим";
+            }
+        }
+
+        // Также можно добавить поддержку клавиши F11
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F11') {
+                e.preventDefault();
+                toggleFullscreen();
+            }
+
+            // Выход по Escape из полноэкранного режима
+            if (e.key === 'Escape' &&
+                (document.fullscreenElement ||
+                    document.webkitFullscreenElement ||
+                    document.mozFullScreenElement ||
+                    document.msFullscreenElement)) {
+                toggleFullscreen();
+            }
+        });
+    </script>
+
+
+
+
+</body>
+
+</html>

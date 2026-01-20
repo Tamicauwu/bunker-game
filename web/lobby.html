@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Лобби — Бункер</title>
+    <style>
+        /* Основные стили */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+
+        /* Видео на заднем фоне */
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+
+        /* Лобби контейнер */
+        .lobby-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 50px;
+            background: rgba(0, 0, 0, 0.3);
+            /* затемнение для текста */
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 5px #000;
+        }
+
+        #players {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            width: 120px;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .player:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #555;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            overflow: hidden;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        #enter-bunker {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 18px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            background: #ff3c3c;
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 60, 60, 0.5);
+            transition: 0.3s;
+        }
+
+        #enter-bunker:hover {
+            background: #ff1f1f;
+            transform: scale(1.05);
+        }
+    </style>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.png" type="image/png">
+</head>
+
+<body>
+    <!-- Видео на фоне -->
+    <video autoplay muted loop id="bg-video">
+        <source src="video.mp4" type="video/mp4">
+        Ваш браузер не поддерживает видео.
+    </video>
+
+    <div class="lobby-container">
+        <h1>Лобби — ожидание игроков</h1>
+        <div id="players"></div>
+        
+
+    </div>
+
+    <!-- Кнопка внизу страницы -->
+    <button id="enter-bunker" style="
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 15px 50px;
+    font-size: 20px;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    background: #ff3c3c;
+    color: white;
+    box-shadow: 0 0 20px rgba(255, 60, 60, 0.5);
+    z-index: 15;
+    transition: 0.3s;
+    ">Зайти в Бункер</button>
+
+   
+
+    <script>
+        async function loadPlayers() {
+            try {
+                const response = await fetch("http://127.0.0.1:8000/lobby/players");
+                const players = await response.json();
+
+                const container = document.getElementById("players");
+                container.innerHTML = "";
+
+                players.forEach(p => {
+                    const div = document.createElement("div");
+                    div.className = "player";
+
+                    // Кружочек с аватаркой или первой буквой имени
+                    const avatar = document.createElement("div");
+                    avatar.className = "avatar";
+                    if (p.avatar_url) {
+                        const img = document.createElement("img");
+                        img.src = p.avatar_url;
+                        avatar.appendChild(img);
+                    } else {
+                        avatar.textContent = p.name[0]; // первая буква имени
+                    }
+
+                    const name = document.createElement("div");
+                    name.textContent = p.name;
+
+                    div.appendChild(avatar);
+                    div.appendChild(name);
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                console.error("Ошибка загрузки игроков:", err);
+            }
+        }
+
+        // Обновление каждые 2 секунды
+        setInterval(loadPlayers, 2000);
+        loadPlayers();
+
+        document.getElementById("enter-bunker").addEventListener("click", () => {
+            window.location.href = "room.html";
+        });
+
+    </script>
+
+    <!-- Внутри <body> после кнопки "Зайти в Бункер" -->
+    <!-- Иконка правил -->
+    <div id="rules-icon" title="Правила" style="
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background: yellow;
+    color: black;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+">?</div>
+
+    <!-- Модальное окно правил -->
+    <div id="rules-modal" style="
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5); /* полупрозрачный фон */
+    color: white;
+    z-index: 20;
+    overflow-y: auto;
+    padding: 20px;
+">
+        <div style="
+        position: relative;
+        max-width: 700px;
+        margin: 60px auto;
+        background: rgba(34,34,34,0.9); /* полупрозрачный темный блок */
+        padding: 30px 40px;
+        border-radius: 15px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    ">
+            <!-- Кнопка закрытия -->
+            <button id="close-rules" style="
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 20px;
+        ">×</button>
+
+            <!-- Заголовок -->
+            <h2 style="font-size: 28px; text-align: center; margin-bottom: 25px;">Правила игры</h2>
+
+            <!-- Текст правил -->
+            <div style="
+            font-size: 20px;
+            line-height: 1.6;
+            text-align: justify;
+        ">
+                Игра "Бункер" — это настольная игра-дискуссия на выживание в апокалипсисе, где игроки, получив карты с
+                характеристиками
+                (пол, возраст, профессия, хобби, багаж, здоровье, факты), должны убедить остальных, что именно их нужно
+                взять в ограниченное убежище.
+                <br><br>
+                В конце игры все жители бункера (и изгои) решают, справились ли они с угрозами, используя свои
+                способности для спасения человечества.
+                <br><br>
+                Правила сводятся к раундам, где игроки по очереди раскрывают карты и аргументируют свою полезность, а
+                затем проходит голосование
+                за изгнание самого бесполезного, пока не останется нужное число людей для бункера. После чего происходит
+                финальная оценка их способности выжить.
+                <br><br>
+                Удачи в выживании!
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const rulesIcon = document.getElementById("rules-icon");
+        const rulesModal = document.getElementById("rules-modal");
+        const closeRules = document.getElementById("close-rules");
+
+        rulesIcon.addEventListener("click", () => {
+            rulesModal.style.display = "block";
+        });
+
+        closeRules.addEventListener("click", () => {
+            rulesModal.style.display = "none";
+        });
+
+        // Закрытие по клику на фон
+        rulesModal.addEventListener("click", (e) => {
+            if (e.target === rulesModal) {
+                rulesModal.style.display = "none";
+            }
+        });
+    </script>
+
+    
+
+
+
+</body>
+
+</html>
