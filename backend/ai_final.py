@@ -31,7 +31,6 @@ def generate_ai_final(survivors, dead):
 - не сухо, не отчёт
 - без философии, метафор и эмодзи
 
-
 Выжившие:
 {format_players(survivors)}
 
@@ -45,7 +44,7 @@ def generate_ai_final(survivors, dead):
 4) Допусти небольшое напряжение или конфликт, если это логично
 5) Опираться на характеристики персонажей
 
-Пиши простым, живым русским языком. 
+Пиши простым, живым русским языком.
 """
 
     response = client.chat.completions.create(
@@ -55,9 +54,14 @@ def generate_ai_final(survivors, dead):
             {"role": "user", "content": prompt}
         ],
         temperature=0.8,
-        max_tokens=250
+        max_tokens=600  # 🔹 увеличили лимит, чтобы текст не обрезался
     )
 
-    return response.choices[0].message.content.strip()
+    # 🔹 Проверка и возврат результата
+    try:
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"Ошибка генерации финала: {e}"
+
 
 print("KEY OK:", bool(os.environ.get("OPENROUTER_API_KEY")))
