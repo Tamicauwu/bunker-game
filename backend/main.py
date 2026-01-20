@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
+from backend.bot import notify_current_player
 
 from backend.game_logic import (
     connected_players,
@@ -41,6 +42,7 @@ async def api_start_round():
         )
 
     start_round()
+    asyncio.create_task(notify_current_player())
     return {
         "status": "ok",
         "message": "Круг запущен",
