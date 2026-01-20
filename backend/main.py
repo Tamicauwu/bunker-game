@@ -69,6 +69,12 @@ def reset_game_api():
 # --- STATIC ---
 app.mount("/", StaticFiles(directory="web", html=True), name="web")
 
+@app.on_event("startup")
+async def startup_event():
+    from backend.bot import main as bot_main
+    asyncio.create_task(bot_main())
+
+
 # --- RENDER ENTRY POINT ---
 if __name__ == "__main__":
     import uvicorn
