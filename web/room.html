@@ -587,7 +587,7 @@
     <script>
         async function loadPlayers() {
             try {
-                const res = await fetch("http://127.0.0.1:8000/lobby/players");
+                const res = await fetch("/lobby/players");
                 const players = await res.json();
                 const container = document.getElementById("players");
 
@@ -604,7 +604,7 @@
                     container.classList.add("size-many");
                 }
 
-                const stateRes = await fetch("http://127.0.0.1:8000/game_state");
+                const stateRes = await fetch("/game_state");
                 const game_state = await stateRes.json();
 
                 // --- Показ баннера голосования ---
